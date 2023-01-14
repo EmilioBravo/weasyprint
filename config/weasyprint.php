@@ -11,6 +11,12 @@ return [
   'binary' => env('WEASYPRINT_BINARY'),
 
   /**
+   * The version of the WeasyPrint binary on your system.
+   * @param string
+   */
+  'version' => env('WEASYPRINT_VERSION','54.1'),
+
+  /**
    * The environment variables passed to Symfony Process when
    * executing the WeasyPrint binary.
    * @param array

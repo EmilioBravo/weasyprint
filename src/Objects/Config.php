@@ -11,6 +11,7 @@ class Config implements Arrayable
 {
   private function __construct(
     protected ?string $binary = null,
+    protected ?string $version = null,
     protected string $cachePrefix = 'weasyprint_cache',
     protected int $timeout = 3600,
     protected string $inputEncoding = 'utf-8',
@@ -33,6 +34,12 @@ class Config implements Arrayable
   public function getBinary(): ?string
   {
     return $this->binary;
+  }
+
+  public function getVersion(): ?string
+  {
+    $version = explode('.', $this->version);
+    return $version[0];
   }
 
   public function getCachePrefix(): string
@@ -84,6 +91,7 @@ class Config implements Arrayable
   {
     return [
       'binary' => $this->getBinary(),
+      'version' => $this->getVersion(),
       'cachePrefix' => $this->getCachePrefix(),
       'timeout' => $this->getTimeout(),
       'inputEncoding' => $this->getInputEncoding(),
