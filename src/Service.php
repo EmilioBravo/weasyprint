@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace WeasyPrint;
 
 use Illuminate\Contracts\Support\Renderable;
-use Illuminate\Support\Str;
-use Rockett\Pipeline\Contracts\PipelineContract;
-use Rockett\Pipeline\Pipeline;
+use Rockett\Pipeline\{Contracts\PipelineContract, Pipeline};
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use WeasyPrint\Contracts\Factory;
-use WeasyPrint\Enums\OutputType;
 use WeasyPrint\Objects\{Config, Output, Source};
 use WeasyPrint\Pipeline\{BuilderContainer, BuilderPipes as Pipes};
 
@@ -18,12 +15,10 @@ class Service implements Factory
 {
   protected Config $config;
   protected Source $source;
-  protected OutputType $outputType;
 
   private function __construct(mixed ...$config)
   {
     $this->config = Config::new(...$config);
-    $this->outputType = OutputType::none();
   }
 
   public static function new(mixed ...$config): Factory
@@ -38,21 +33,19 @@ class Service implements Factory
 
   public function mergeConfig(mixed ...$config): Factory
   {
-    $service = clone $this;
-    $service->config = Config::new(...$config);
+    $this->config = Config::new(...$config);
 
-    return $service;
+    return $this;
   }
 
   public function prepareSource(Source|Renderable|string $source): Factory
   {
-    $service = clone $this;
+    $this->source = match ($source instanceof Source) {
+      true => $source,
+      default => Source::new($source)
+    };
 
-    $service->source = $source instanceof Source
-      ? $source
-      : Source::new($source);
-
-    return $service;
+    return $this;
   }
 
   public function getConfig(): Config
@@ -72,43 +65,14 @@ class Service implements Factory
 
   public function addAttachment(string $pathToAttachment): Factory
   {
-    $service = clone $this;
-    $service->source->addAttachment($pathToAttachment);
-
-    return $service;
-  }
-
-  public function setOutputType(OutputType $outputType): Factory
-  {
-    $this->outputType = $outputType;
+    $this->source->addAttachment($pathToAttachment);
 
     return $this;
-  }
-
-  public function to(OutputType $outputType): Factory
-  {
-    return (clone $this)->setOutputType($outputType);
-  }
-
-  public function toPdf(): Factory
-  {
-    return $this->to(OutputType::pdf());
-  }
-
-  public function toPng(): Factory
-  {
-    return $this->to(OutputType::png());
-  }
-
-  public function getOutputType(): OutputType
-  {
-    return $this->outputType;
   }
 
   public function build(): Output
   {
     $pipeline = (new Pipeline)
-      ->pipe(new Pipes\EnsureOutputTypeIsSet)
       ->pipe(new Pipes\EnsureSourceIsSet)
       ->pipe(new Pipes\SetInputPath)
       ->pipe(new Pipes\SetOutputPath)
@@ -123,33 +87,11 @@ class Service implements Factory
 
   protected function processPipeline(PipelineContract $pipeline): BuilderContainer
   {
-    return $pipeline->process(new BuilderContainer(clone $this));
-  }
-
-  protected function syncOutputTypeAndFilename(string $filename): string
-  {
-    if (!$extension = Str::afterLast($filename, '.')) {
-      if ($this->outputType->is(OutputType::none())) {
-        $this->outputType = OutputType::pdf();
-      }
-
-      return Str::of($filename)
-        ->trim('.')
-        ->append($extension = $this->outputType->getValue());
-    }
-
-
-    if ($this->outputType->is(OutputType::none())) {
-      $this->outputType = OutputType::from($extension);
-    }
-
-    return $filename;
+    return $pipeline->process(new BuilderContainer($this));
   }
 
   public function download(string $filename, array $headers = [], bool $inline = false): StreamedResponse
   {
-    $filename = $this->syncOutputTypeAndFilename($filename);
-
     return $this->build()->download($filename, $headers, $inline);
   }
 
@@ -160,8 +102,6 @@ class Service implements Factory
 
   public function putFile(string $path, ?string $disk = null, array $options = []): bool
   {
-    $path = $this->syncOutputTypeAndFilename($path);
-
     return $this->build()->putFile($path, $disk, $options);
   }
 

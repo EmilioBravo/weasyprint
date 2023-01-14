@@ -10,16 +10,16 @@ use Illuminate\Contracts\Support\Arrayable;
 class Config implements Arrayable
 {
   private function __construct(
-    protected string $binary = '/usr/local/bin/weasyprint',
+    protected ?string $binary = null,
     protected string $cachePrefix = 'weasyprint_cache',
     protected int $timeout = 3600,
     protected string $inputEncoding = 'utf-8',
     protected bool $presentationalHints = true,
-    protected bool $optimizeImages = false,
-    protected int|null $resolution = null,
+    protected string $optimizeSize = 'none',
     protected string|null $mediaType = null,
     protected string|null $baseUrl = null,
     protected array|null $stylesheets = null,
+    protected array $processEnvironment = ['LC_ALL' => 'en_US.UTF-8'],
   ) {
   }
 
@@ -30,7 +30,7 @@ class Config implements Arrayable
     return new static(...array_merge($defaults, $config));
   }
 
-  public function getBinary(): string
+  public function getBinary(): ?string
   {
     return $this->binary;
   }
@@ -55,14 +55,9 @@ class Config implements Arrayable
     return $this->presentationalHints;
   }
 
-  public function shouldOptimizeImages(): bool
+  public function getOptimizeSize(): string
   {
-    return $this->optimizeImages;
-  }
-
-  public function getResolution(): int|null
-  {
-    return $this->resolution;
+    return $this->optimizeSize;
   }
 
   public function getMediaType(): string|null
@@ -80,6 +75,11 @@ class Config implements Arrayable
     return $this->stylesheets;
   }
 
+  public function getProcessEnvironment(): array
+  {
+    return $this->processEnvironment;
+  }
+
   public function toArray()
   {
     return [
@@ -88,11 +88,11 @@ class Config implements Arrayable
       'timeout' => $this->getTimeout(),
       'inputEncoding' => $this->getInputEncoding(),
       'presentationalHints' => $this->usePresentationalHints(),
-      'optimizeImages' => $this->shouldOptimizeImages(),
-      'resolution' => $this->getResolution(),
+      'optimizeSize' => $this->getOptimizeSize(),
       'mediaType' => $this->getMediaType(),
       'baseUrl' => $this->getBaseUrl(),
       'stylesheets' => $this->getStylesheets(),
+      'processEnvironment' => $this->getProcessEnvironment(),
     ];
   }
 }

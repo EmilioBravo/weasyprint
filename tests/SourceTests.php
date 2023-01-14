@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace WeasyPrint\Tests;
 
 use Illuminate\Contracts\Support\Renderable;
-use WeasyPrint\Objects\Source;
-use WeasyPrint\Service;
+use WeasyPrint\{Objects\Source, Service};
 
 /** @covers WeasyPrint\Service */
 class SourceTests extends TestCase
@@ -56,7 +55,7 @@ class SourceTests extends TestCase
   {
     $service = Service::new();
 
-    $source = $service->prepareSource('https://example.com')->getSource();
+    $source = $service->prepareSource('https://google.com')->getSource();
 
     $this->assertTrue($source->isUrl());
   }

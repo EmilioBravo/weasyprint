@@ -1,17 +1,22 @@
-image: php:8
-
-cache:
-  paths:
-    - vendor/
-
-before_script:
-  - apt-get update -yqq
-  - apt-get install -yqq git libmcrypt-dev libpq-dev libcurl4-gnutls-dev libicu-dev libvpx-dev libjpeg-dev libpng-dev libxpm-dev zlib1g-dev libfreetype6-dev libxml2-dev libexpat1-dev libbz2-dev libgmp3-dev libldap2-dev unixodbc-dev libsqlite3-dev libaspell-dev libsnmp-dev libpcre3-dev libtidy-dev build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info libzip-dev
-  - pip3 install WeasyPrint
-  - docker-php-ext-install gd zip
-  - curl -sS https://getcomposer.org/installer | php
-  - php composer.phar install --optimize-autoloader --prefer-dist
-
-test:
+.template:
+  cache:
+    paths: [vendor/]
+  parallel:
+    matrix:
+      - WEASYPRINT: ["53", "54"]
+  before_script:
+    - apk -q add py3-pip py3-pillow py3-cffi py3-brotli gcc musl-dev python3-dev pango fontconfig-dev font-noto
+    - pip3 -q install weasyprint==$WEASYPRINT
+    - weasyprint --info
+    - curl -sS https://getcomposer.org/installer | php
+    - php composer.phar install -qo
   script:
     - ./vendor/bin/testbench package:test --without-tty
+
+php8.0:
+  extends: .template
+  image: php:8.0-cli-alpine
+
+php8.1:
+  extends: .template
+  image: php:8.1-cli-alpine

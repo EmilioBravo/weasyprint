@@ -28,7 +28,7 @@ class Provider extends ServiceProvider
 
   public function register(): void
   {
-    $this->app->singleton(Factory::class, fn ($app) => Service::new(
+    $this->app->scoped(Factory::class, fn ($app) => Service::new(
       ...$app->make(Repository::class)->get($this->name())
     ));
   }

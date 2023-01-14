@@ -1,10 +1,33 @@
-<img width="400" src="logo.png" alt="WeasyPrint for Laravel" />
+# WeasyPrint for Laravel – Release Notes
 
----
+## 6.1.0 `current`, `minor`
 
-# Release Notes
+This release adds support for Laravel 9, and works just fine with WeasyPrint v54.
 
-## v5.0.0 (Major Paradigm Release) `current`
+## 6.0.0 (Breaking Release) `current`
+
+This version is specifically designed around WeasyPrint v53, which drops support for PNGs due to its new rendering engine. Overall, this simplifies things from an interface perspective – you only need to prepare the source, build the `Output`, and do what you need with it.
+
+Over and above the changes noted below, the package now requires Laravel 8.47+, which adds support for [scoped singletons](https://laravel.com/docs/8.x/container#binding-scoped). In the previous version (v5) of this package, the singleton was immutable, which meant that every mutable-by-design method would actually return a cloned instance of the service.
+
+### What’s New
+
+- The configuration file now supports environment variables, which generally removes the need to publish it. See the [readme](readme.md#available-configuration-options) for a list of available options.
+
+### Breaking Changes
+
+- The `to()`, `toPdf()` and `toPng()` methods have been removed.
+- Likewise, the `OutputType` enumeration class has been removed. Under the hood, the `--format` flag has been removed.
+- The `optimizeImages` config option has been removed in favor of `optimizeSize`.
+- The `resolution` config option has been removed, due to lack of PNG support.
+
+### Other Changes
+
+- The `binary` config option previously declared a sensible default of `/usr/local/bin/weasyprint`. However, this may not always be the case as WeasyPrint may be installed in a virtual environment, which does not conform to that path. Additionally, some Linux distros place the binary elsewhere on the system. With the removal of this default, the package will attempt to locate the binary, which means it needs to be in your `PATH`. If it is not in your path, and you do not want it to be, simply set the absolute path to the binary in your environment using `WEASYPRINT_BINARY`.
+- Due to the addition of the scoped singleton, the service class is no longer immutable. Any method that previously cloned the service will no longer do so.
+- Internally, the package now uses a [pipeline](https://github.com/mikerockett/pipeline) to prepare everything and call the WeasyPrint binary.
+
+## 5.0.0 (Paradigm Release) `maintenance`
 
 ### What’s New
 
@@ -29,7 +52,7 @@ Given that v5 is a paradigm release, the following changes are considered breaki
 
 - The `download` and `inline` methods may now be called either on the service or on the output returned from `build()`. If it is called on the service, `build()` will be called for you, with the file type inferred from the extension, which defaults to `.pdf` if not provided.
 
-## v4.0.0 `maintenance`
+## 4.0.0 `maintenance`
 
 ### Changes
 
@@ -38,19 +61,19 @@ Given that v5 is a paradigm release, the following changes are considered breaki
 - Upgrades `orchestra/testbench` to v6
 - Adds class coverage to test suite
 
-## v3.0.0 `no support`
+## 3.0.0 `no support`
 
 ### Changes
 
 - Adds support for `symfony/process` v5
 
-## v2.0.1 `no support`
+## 2.0.1 `no support`
 
 ### Changes
 
 - Adds support for Laravel 7
 
-## v2.0.0 (Major Breaking Release) `no support`
+## 2.0.0 (Major Breaking Release) `no support`
 
 ### Breaking Changes
 
@@ -66,7 +89,7 @@ Given that v5 is a paradigm release, the following changes are considered breaki
   - `setOutputEncoding` to set the `--encoding`
 - Throws `InvalidOutputModeException` when the output mode is not `pdf` or `pdf`
 
-## v1.0.5 `no support`
+## 1.0.5 `no support`
 
 ### What’s New
 
@@ -77,7 +100,7 @@ Given that v5 is a paradigm release, the following changes are considered breaki
 - Does not re-convert if the output is already available
 - Adds the `toPdf` and `toPng` shorthand helpers
 
-## v1.0.4 `no support`
+## 1.0.4 `no support`
 
 ### What’s New
 
@@ -89,7 +112,7 @@ Given that v5 is a paradigm release, the following changes are considered breaki
 - [Internal] Adds an ISC license file
 - [Readme] Documents the `download` and `inline` methods
 
-## v1.0.3 `no support`
+## 1.0.3 `no support`
 
 ### What’s New
 
@@ -100,12 +123,12 @@ Given that v5 is a paradigm release, the following changes are considered breaki
 
 - [Internal] Adds proper tests
 
-## v1.0.2 `no support`
+## 1.0.2 `no support`
 
 ### Fixes
 
 - Corrects the `view` method to be static, as intended
 
-## v1.0.0 `no support`
+## 1.0.0 `no support`
 
 - Initial Release

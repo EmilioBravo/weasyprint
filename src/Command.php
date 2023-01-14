@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace WeasyPrint;
 
 use Illuminate\Support\Collection;
+use RuntimeException;
 use Symfony\Component\Process\{Exception\ProcessFailedException, Process};
-use WeasyPrint\Enums\OutputType;
 use WeasyPrint\Exceptions\AttachmentNotFoundException;
 use WeasyPrint\Objects\Config;
 
@@ -16,25 +16,39 @@ class Command
 
   public function __construct(
     protected Config $config,
-    protected OutputType $outputType,
     string $inputPath,
     string $outputPath,
     protected array $attachments = []
   ) {
     $this->arguments = new Collection([
-      $config->getBinary(),
+      $config->getBinary() ?? $this->findBinary(),
       $inputPath,
       $outputPath,
       '--quiet',
-      '--format', $outputType->getValue(),
       '--encoding', $config->getInputEncoding(),
     ]);
 
     $this->prepareOptionalArguments();
   }
 
+  protected function findBinary(): string
+  {
+    $process = Process::fromShellCommandline('which weasyprint');
+    $process->run();
+
+    if (!$process->isSuccessful()) {
+      throw new RuntimeException(
+        'Unable to find WeasyPrint binary. Please specify the absolute path to WeasyPrint in config [binary].'
+      );
+    }
+
+    return trim($process->getOutput());
+  }
+
   protected function maybePushArgument(string $key, $value): void
   {
+    $key = "--$key";
+
     if ($value === true) {
       $this->arguments->push($key);
     } else if ($value) {
@@ -45,52 +59,49 @@ class Command
   protected function prepareOptionalArguments(): void
   {
     $this->maybePushArgument(
-      '--presentational-hints',
+      'presentational-hints',
       $this->config->usePresentationalHints()
     );
 
     $this->maybePushArgument(
-      '--base-url',
+      'base-url',
       $this->config->getBaseUrl()
     );
 
     $this->maybePushArgument(
-      '--media-type',
+      'media-type',
       $this->config->getMediaType()
     );
 
-    if ($this->outputType->is(OutputType::png())) {
-      $this->maybePushArgument(
-        '--resolution',
-        $this->config->getResolution()
-      );
-    }
+    $this->maybePushArgument(
+      'optimize-size',
+      $this->config->getOptimizeSize()
+    );
 
-    if ($this->outputType->is(OutputType::pdf())) {
-      foreach ($this->attachments as $attachment) {
-        if (!is_file($attachment)) {
-          throw new AttachmentNotFoundException($attachment);
-        }
-
-        $this->maybePushArgument('--attachment', $attachment);
+    foreach ($this->attachments as $attachment) {
+      if (!is_file($attachment)) {
+        throw new AttachmentNotFoundException($attachment);
       }
 
-      if ($stylesheets = $this->config->getStylesheets()) {
-        foreach ($stylesheets as $stylesheet) {
-          $this->maybePushArgument('--stylesheet', $stylesheet);
-        }
+      $this->maybePushArgument('attachment', $attachment);
+    }
+
+    if ($stylesheets = $this->config->getStylesheets()) {
+      foreach ($stylesheets as $stylesheet) {
+        $this->maybePushArgument('stylesheet', $stylesheet);
       }
     }
   }
 
-  public function execute()
+  public function execute(): void
   {
     $process = new Process(
       command: $this->arguments->toArray(),
-      env: ['LC_ALL' => 'en_US.UTF-8'],
+      env: $this->config->getProcessEnvironment(),
+      timeout: $this->config->getTimeout()
     );
 
-    $process->setTimeout($this->config->getTimeout())->run();
+    $process->run();
 
     if (!$process->isSuccessful()) {
       throw new ProcessFailedException($process);
