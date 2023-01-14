@@ -73,10 +73,13 @@ class Command
       $this->config->getMediaType()
     );
 
-    $this->maybePushArgument(
-      'optimize-size',
-      $this->config->getOptimizeSize()
-    );
+    if($this->config->getVersion() >= 54)
+    {
+      $this->maybePushArgument(
+        'optimize-size',
+        $this->config->getOptimizeSize()
+      );
+    }
 
     foreach ($this->attachments as $attachment) {
       if (!is_file($attachment)) {
@@ -90,6 +93,11 @@ class Command
       foreach ($stylesheets as $stylesheet) {
         $this->maybePushArgument('stylesheet', $stylesheet);
       }
+    }
+
+    if($this->config->getVersion() < 54)
+    {
+      $this->arguments->push('-fpdf');
     }
   }
 
