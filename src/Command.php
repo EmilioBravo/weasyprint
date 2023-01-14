@@ -95,6 +95,14 @@ class Command
       }
     }
 
+    if($this->config->getVersion() >= 54)
+    {
+      $this->maybePushArgument(
+        'optimize-size',
+        $this->config->getOptimizeSize()
+      );
+    }
+
     if($this->config->getVersion() < 54)
     {
       $this->arguments->push('-fpdf');
