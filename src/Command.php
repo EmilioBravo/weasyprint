@@ -91,6 +91,19 @@ class Command
         $this->maybePushArgument('stylesheet', $stylesheet);
       }
     }
+
+    if($this->config->getVersion() >= 54)
+    {
+      $this->maybePushArgument(
+        'optimize-size',
+        $this->config->getOptimizeSize()
+      );
+    }
+
+    if($this->config->getVersion() < 54)
+    {
+      $this->arguments->push('-fpdf');
+    }
   }
 
   public function execute(): void
